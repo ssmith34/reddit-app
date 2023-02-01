@@ -24,7 +24,8 @@ public class OauthTest {
 	@RequestMapping(path="/test", method=RequestMethod.GET)
 	public List<Post> test(@RequestParam String subreddit) throws JsonMappingException, JsonProcessingException  {
 	
-		String token = redditService.getToken();		   
+		String token = redditService.getToken();
+//		System.out.println(token);
 	    return redditService.getResults(token, subreddit);
 		  	    
 	}

@@ -42,11 +42,25 @@ public class Reddit {
 		
 		HttpHeaders httpHeaders = new HttpHeaders();
 		// make call to token endpoint and retrieve token
+		httpHeaders.setBasicAuth(this.apiKey, this.apiSecret);
+		httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+		httpHeaders.set("User-Agent", "reddit-parser");
+		String body = "grant_type=client_credentials";
 
+		HttpEntity<String> request = new HttpEntity<>(body, httpHeaders);
 
+		ResponseEntity<String> response = restTemplate.exchange(this.oauthURL, HttpMethod.POST, request, String.class);
 
+		ObjectMapper objectMapper = new ObjectMapper();
+		String token = "";
+		try {
+			JsonNode jsonNode = objectMapper.readTree(response.getBody());
+			token = jsonNode.path("access_token").asText();
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
 		//
-		return null;
+		return token;
 	}
 	
 	public List<Post> getResults(String token, String subreddit) throws JsonMappingException, JsonProcessingException {
@@ -58,14 +72,29 @@ public class Reddit {
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", "reddit-parser");  
 		// attach token to the request
-
+		headers.set("Authorization", token);
+		HttpEntity<String> httpEntity = new HttpEntity<>(headers);
 		//
 
 		// make call to retrieve list of posts
-
+		ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
 		//
 
-		return null;
+		ObjectMapper objectMapper = new ObjectMapper();
+		JsonNode jsonNode = objectMapper.readTree(response.getBody());
+
+		List<Post> listOfPosts = new ArrayList<>();
+
+		for (int i = 0; i < 10; i++) {
+			String title = jsonNode.path("data").path("children").path(i).path("data").path("title").asText();
+			String ups = jsonNode.path("data").path("children").path(i).path("data").path("ups").asText();
+			String image = jsonNode.path("data").path("children").path(i).path("data").path("url").asText();
+
+			Post post = new Post(title, Integer.parseInt(ups), image);
+			listOfPosts.add(post);
+		}
+
+		return listOfPosts;
 	}
 
 }
